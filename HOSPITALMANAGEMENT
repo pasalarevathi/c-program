@@ -2,58 +2,72 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_PATIENTS 100
-typedef struct {
+typedef struct Patient {
     int id;
     char name[50];
     int age;
     char disease[50];
+    struct Patient* next; 
 } Patient;
-Patient patients[MAX_PATIENTS];
-int numPatients = 0;
+
+Patient* head = NULL;
 
 void addPatient() {
-    if (numPatients < MAX_PATIENTS) {
-        Patient newPatient;
-        printf("Enter patient ID: ");
-        scanf("%d", &newPatient.id);
-        printf("Enter patient name: ");
-        scanf(" %[^\n]s", newPatient.name); // Important for names with spaces
-        printf("Enter patient age: ");
-        scanf("%d", &newPatient.age);
-        printf("Enter patient disease: ");
-        scanf(" %[^\n]s", newPatient.disease);
-
-        patients[numPatients] = newPatient;
-        numPatients++;
-        printf("Patient added successfully.\n");
-    } else {
-        printf("Maximum number of patients reached.\n");
+    Patient* newPatient = (Patient*)malloc(sizeof(Patient));
+    if (newPatient == NULL) {
+        printf("Memory allocation failed.\n");
+        return;
     }
-}
 
-void displayPatient(int id) {
-    for (int i = 0; i < numPatients; i++) {
-        if (patients[i].id == id) {
-            printf("Patient ID: %d\n", patients[i].id);
-            printf("Name: %s\n", patients[i].name);
-            printf("Age: %d\n", patients[i].age);
-            printf("Disease: %s\n", patients[i].disease);
-            return; // Patient found, exit the function
+    printf("Enter patient ID: ");
+    scanf("%d", &newPatient->id);
+    printf("Enter patient name: ");
+    scanf(" %[^\n]s", newPatient->name);
+    printf("Enter patient age: ");
+    scanf("%d", &newPatient->age);
+    printf("Enter patient disease: ");
+    scanf(" %[^\n]s", newPatient->disease);
+
+    newPatient->next = NULL;
+
+    if (head == NULL) {
+        head = newPatient;
+    } else {
+        Patient* current = head;
+        while (current->next != NULL) {
+            current = current->next;
         }
+        current->next = newPatient;
+    }
+    printf("Patient added successfully.\n");
+}
+void displayPatient(int id) {
+    Patient* current = head;
+    while (current != NULL) {
+        if (current->id == id) {
+            printf("Patient ID: %d\n", current->id);
+            printf("Name: %s\n", current->name);
+            printf("Age: %d\n", current->age);
+            printf("Disease: %s\n", current->disease);
+            return;
+        }
+        current = current->next;
     }
     printf("Patient with ID %d not found.\n", id);
 }
 
 void displayAllPatients() {
-    if (numPatients == 0) {
+    if (head == NULL) {
         printf("No patients recorded yet.\n");
         return;
     }
+
     printf("\n--- All Patients ---\n");
-    for (int i = 0; i < numPatients; i++) {
-        displayPatient(patients[i].id); // Reuse displayPatient function
+    Patient* current = head;
+    while (current != NULL) {
+        displayPatient(current->id);
         printf("------------------\n");
+        current = current->next;
     }
 }
 
@@ -63,37 +77,49 @@ void searchPatientByName() {
     scanf(" %[^\n]s", searchName);
 
     int found = 0;
-    for (int i = 0; i < numPatients; i++) {
-        if (strcmp(patients[i].name, searchName) == 0) {
-            displayPatient(patients[i].id);
+    Patient* current = head;
+    while (current != NULL) {
+        if (strcmp(current->name, searchName) == 0) {
+            displayPatient(current->id);
             found = 1;
-            // You could 'break' here if you only want the first match
             printf("------------------\n");
         }
+        current = current->next;
     }
-
     if (!found) {
         printf("No patient found with that name.\n");
     }
-
 }
 
-
 void deletePatient(int id) {
-    for (int i = 0; i < numPatients; i++) {
-        if (patients[i].id == id) {
-            // Shift remaining patients to fill the gap
-            for (int j = i; j < numPatients - 1; j++) {
-                patients[j] = patients[j + 1];
+    Patient* current = head;
+    Patient* previous = NULL;
+
+    while (current != NULL) {
+        if (current->id == id) {
+            if (previous == NULL) {
+                head = current->next; // If deleting the head node
+            } else {
+                previous->next = current->next;
             }
-            numPatients--;
+            free(current);
             printf("Patient with ID %d deleted successfully.\n", id);
             return;
         }
+        previous = current;
+        current = current->next;
     }
     printf("Patient with ID %d not found.\n", id);
 }
-
+void freeMemory() {
+    Patient* current = head;
+    while (current != NULL) {
+        Patient* temp = current;
+        current = current->next;
+        free(temp);
+    }
+    head = NULL;
+}
 
 int main() {
     int choice, patientId;
@@ -137,5 +163,6 @@ int main() {
         }
     } while (choice != 6);
 
+    freeMemory(); // Free allocated memory before exiting
     return 0;
 }
